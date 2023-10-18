@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+
 import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
@@ -20,6 +23,7 @@ const io = new Server(server, {
 const routesPath = path.join(__dirname, "routes");
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Set CORS With Whitelist Array
 let whitelistedDomains = process.env.WHITELISTED_DOMAINS.split(", ");
@@ -69,7 +73,7 @@ try {
 		})
 	);
 } catch (err) {
-	console.log(err);
+	console.error(err);
 	app.all("*", (_, res) =>
 		res.status(500).json({
 			message: "Internal server error",
@@ -85,7 +89,7 @@ io.on("connection", socket => {
 	});
 
 	socket.on("error", err => {
-		console.log(err);
+		console.error(err);
 	});
 });
 
