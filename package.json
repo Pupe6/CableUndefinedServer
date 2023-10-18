@@ -4,7 +4,7 @@
 	"description": "A server for the Cable = Undefined project by Team Pupe6",
 	"main": "dist/index.js",
 	"scripts": {
-		"start": "npm run build && node ./dist/start.js",
+		"start": "node ./dist/index.js",
 		"build": "npm run clean && tsc",
 		"clean": "rm -rf ./dist",
 		"dev": "ts-node-dev --respawn --transpile-only --poll ./src"
