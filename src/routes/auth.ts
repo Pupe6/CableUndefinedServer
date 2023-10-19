@@ -3,6 +3,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { Errors } from "../utils/errors";
 import { createUser, getUsers } from "../utils/users";
 import { verifyJWT, UserRequest } from "../middleware/verifyJWT";
 
@@ -16,9 +17,7 @@ router.post("/register", async (req, res) => {
 		const { username, email, password } = req.body;
 
 		if (!(username && email && password)) {
-			return res
-				.status(400)
-				.json({ message: "Please fullfil all fields." });
+			return res.status(400).json({ error: Errors.MISSING_FIELDS });
 		}
 
 		let encryptedPassword = await bcrypt.hash(password, 10);
@@ -29,8 +28,9 @@ router.post("/register", async (req, res) => {
 			password: encryptedPassword,
 		});
 
-		if ("err" in user) {
-			return res.status(400).json({ err: user.err });
+		if ("error" in user) {
+			// todo add error handling
+			return res.status(400).json({ error: user.error });
 		}
 
 		user._token = jwt.sign(
@@ -57,9 +57,9 @@ router.post("/register", async (req, res) => {
 				_token: undefined,
 			},
 		});
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 
@@ -68,22 +68,22 @@ router.post("/login", async (req, res) => {
 		const { email, password } = req.body;
 
 		if (!(email && password))
-			return res
-				.status(400)
-				.json({ message: "Please fullfil all fields." });
+			return res.status(400).json({ error: Errors.MISSING_FIELDS });
 
 		const result = await getUsers({ email: email.toLowerCase() });
 
-		if ("err" in result) {
-			return res.status(400).json({ err: result.err });
+		if ("error" in result) {
+			// todo add error handling
+			return res.status(400).json({ error: result.error });
 		}
 
 		const user = result.users[0];
 
-		if ("err" in user) return res.status(400).json({ err: user.err });
+		// todo add error handling
+		if ("error" in user) return res.status(400).json({ error: user.error });
 
 		if (!(await bcrypt.compare(password, user.password)))
-			return res.status(400).json({ err: "Invalid credentials." });
+			return res.status(400).json({ error: Errors.INVALID_CREDENTIALS });
 
 		const token = jwt.sign(
 			{
@@ -114,17 +114,15 @@ router.post("/login", async (req, res) => {
 				_token: undefined,
 			},
 		});
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 
 router.get("/logout", verifyJWT, async (req: UserRequest, res) => {
 	try {
 		const token = <string>req.cookies.token;
-
-		if (!token) return res.status(400).json({ err: "No session found." });
 
 		await User.findByIdAndUpdate(req.user._id, { _token: null });
 
@@ -133,18 +131,18 @@ router.get("/logout", verifyJWT, async (req: UserRequest, res) => {
 		res.clearCookie("token");
 
 		return res.status(200).json({ message: "Logged out successfully." });
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 
 router.get("/token", verifyJWT, async (_, res) => {
 	try {
 		res.status(200).json({ message: "Token is valid.", valid: true });
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 

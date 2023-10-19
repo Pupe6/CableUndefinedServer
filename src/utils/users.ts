@@ -2,11 +2,12 @@ import { ObjectId, HydratedDocument, FilterQuery } from "mongoose";
 import bcrypt from "bcryptjs";
 
 import { User, IUser } from "../models/User";
+import { Errors } from "./errors";
 
 async function getUsers(
 	query: FilterQuery<IUser> = {}
 ): Promise<
-	{ err: Error } | { count: number; users: HydratedDocument<IUser>[] }
+	{ error: Error } | { count: number; users: HydratedDocument<IUser>[] }
 > {
 	try {
 		const count = await User.countDocuments(query);
@@ -14,20 +15,18 @@ async function getUsers(
 		const users: HydratedDocument<IUser>[] = await User.find(query);
 
 		return { count, users };
-	} catch (err) {
-		return { err };
+	} catch (error) {
+		return { error };
 	}
 }
 
 async function updateUser(
 	userId: ObjectId,
 	user: IUser & { newPassword?: string }
-): Promise<HydratedDocument<IUser> | { err: Error }> {
+): Promise<HydratedDocument<IUser> | { error: Error }> {
 	try {
 		if (!user.password)
-			throw new Error(
-				"You must provide your password to update your account."
-			);
+			throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
 		const userToUpdate: HydratedDocument<IUser> = await User.findById(
 			userId
@@ -37,12 +36,11 @@ async function updateUser(
 			if (!user[key]) delete user[key];
 		}
 
-		if (!userToUpdate)
-			throw new Error("There is no such user with provided id.");
+		if (!userToUpdate) throw new Error(Errors.USER_NOT_FOUND);
 
 		// Verify User Ownership
 		if (!(await bcrypt.compare(user.password, userToUpdate.password)))
-			throw new Error("The password you entered is incorrect.");
+			throw new Error(Errors.INVALID_CREDENTIALS);
 
 		const password = user.newPassword || user.password;
 
@@ -56,49 +54,45 @@ async function updateUser(
 			);
 
 		return updatedUser;
-	} catch (err) {
-		return { err };
+	} catch (error) {
+		return { error };
 	}
 }
 
 async function deleteUser(
 	userId: ObjectId,
 	userPassword: string
-): Promise<{ message: string } | { err: Error }> {
+): Promise<{ message: string } | { error: Error }> {
 	try {
-		if (!userPassword)
-			throw new Error(
-				"You must provide your password to delete your account."
-			);
+		if (!userPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
 		const userToDelete: HydratedDocument<IUser> = await User.findById(
 			userId
 		);
 
-		if (!userToDelete)
-			throw new Error("There is no such user with provided id.");
+		if (!userToDelete) throw new Error(Errors.USER_NOT_FOUND);
 
 		// Verify User Ownership
 		if (!(await bcrypt.compare(userPassword, userToDelete.password)))
-			throw new Error("The password you entered is incorrect.");
+			throw new Error(Errors.INVALID_CREDENTIALS);
 
 		await User.findByIdAndDelete(userId);
 
 		return { message: "User has been deleted." };
-	} catch (err) {
-		return { err };
+	} catch (error) {
+		return { error };
 	}
 }
 
 async function createUser(
 	user: IUser
-): Promise<HydratedDocument<IUser> | { err: Error }> {
+): Promise<HydratedDocument<IUser> | { error: Error }> {
 	try {
 		const newUser: HydratedDocument<IUser> = await new User(user).save();
 
 		return newUser;
-	} catch (err) {
-		return { err };
+	} catch (error) {
+		return { error };
 	}
 }
 

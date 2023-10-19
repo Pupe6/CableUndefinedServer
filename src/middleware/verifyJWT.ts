@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import { IUser, User } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
 
+import { Errors } from "../utils/errors";
+
 export interface UserRequest extends Request {
 	user: HydratedDocument<IUser>;
 }
@@ -19,8 +21,7 @@ export const verifyJWT = async (
 	try {
 		if (!token)
 			return res.status(401).json({
-				message:
-					"A token is required for authentication. Please log in.",
+				error: Errors.NO_SESSION,
 				valid: false,
 			});
 
@@ -28,13 +29,13 @@ export const verifyJWT = async (
 
 		if (bannedToken)
 			return res.status(401).json({
-				message: "This token has expired. Please log in again.",
+				error: Errors.EXPIRED_TOKEN,
 				valid: false,
 			});
-	} catch (err) {
-		console.error(err);
+	} catch (error) {
+		console.error(error);
 		res.status(500).json({
-			message: "Internal server error. Please try again later.",
+			error: Errors.INTERNAL_SERVER_ERROR,
 			valid: false,
 		});
 	}
@@ -48,8 +49,7 @@ export const verifyJWT = async (
 
 		if (!user)
 			return res.status(401).json({
-				message:
-					"Could not find a user with this token. Please log in again.",
+				error: Errors.USER_NOT_FOUND,
 				valid: false,
 			});
 
@@ -63,7 +63,7 @@ export const verifyJWT = async (
 			await BannedToken.create({ token });
 
 			return res.status(403).json({
-				message: "Your session has expired. Please log in again.",
+				error: Errors.EXPIRED_TOKEN,
 				valid: false,
 			});
 		}
@@ -72,9 +72,9 @@ export const verifyJWT = async (
 		delete user._token;
 
 		req.user = user;
-	} catch (err) {
+	} catch (error) {
 		return res.status(401).json({
-			message: "Invalid token. Please log in again.",
+			error: Errors.INVALID_TOKEN,
 			valid: false,
 		});
 	}

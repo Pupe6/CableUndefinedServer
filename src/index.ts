@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
+import { Errors } from "./utils/errors";
 
 dotenv.config();
 
@@ -69,14 +70,14 @@ try {
 
 	app.all("*", (_, res) =>
 		res.status(404).json({
-			message: "Not found",
+			error: Errors.NOT_FOUND,
 		})
 	);
-} catch (err) {
-	console.error(err);
+} catch (error) {
+	console.error(error);
 	app.all("*", (_, res) =>
 		res.status(500).json({
-			message: "Internal server error",
+			error: Errors.INTERNAL_SERVER_ERROR,
 		})
 	);
 }
@@ -88,8 +89,8 @@ io.on("connection", socket => {
 		console.log("User disconnected");
 	});
 
-	socket.on("error", err => {
-		console.error(err);
+	socket.on("error", error => {
+		console.error(error);
 	});
 });
 

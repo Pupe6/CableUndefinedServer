@@ -3,6 +3,7 @@ import { Router } from "express";
 import { ObjectId } from "mongoose";
 
 import { updateUser, deleteUser } from "../utils/users";
+import { Errors } from "../utils/errors";
 import { UserRequest, verifyJWT } from "../middleware/verifyJWT";
 
 export const router = Router();
@@ -14,16 +15,17 @@ router.put("/:id", verifyJWT, async (req: UserRequest, res) => {
 			req.body
 		);
 
-		if ("err" in user) {
-			return res.status(400).json({ err: user.err });
+		if ("error" in user) {
+			// todo add error handling
+			return res.status(400).json({ error: user.error });
 		}
 
 		user.password = undefined;
 
 		return res.status(200).json({ user });
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 
@@ -34,14 +36,15 @@ router.delete("/:id", verifyJWT, async (req: UserRequest, res) => {
 			req.body.password
 		);
 
-		if ("err" in user) {
-			return res.status(400).json({ err: user.err });
+		if ("error" in user) {
+			// todo add error handling
+			return res.status(400).json({ error: user.error });
 		}
 
 		return res.status(200).json({ user });
-	} catch (err) {
-		console.error(err);
-		return res.status(500).json({ err: "Internal server error." });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });
 	}
 });
 
