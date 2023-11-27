@@ -1,0 +1,3 @@
+[submodule "src/utils/langchain"]
+	path = src/utils/langchain
+	url = https://github.com/Pupe6/CableUndefinedLangChain
