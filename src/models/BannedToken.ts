@@ -1,6 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 export interface IBannedToken {
+	_id?: string;
 	token: string;
 	createdAt?: Date;
 	updatedAt?: Date;

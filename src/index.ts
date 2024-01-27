@@ -4,12 +4,17 @@ import cookieParser from "cookie-parser";
 
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Namespace, Server, Socket } from "socket.io";
 
 import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
 import { Errors } from "./utils/errors";
+import { onWithAuth } from "./middleware/authenticateWS";
+
+export interface SocketWithAuth extends Socket {
+	onWithAuth: (event: string, callback: Function) => void;
+}
 
 dotenv.config();
 
@@ -22,6 +27,7 @@ const io = new Server(server, {
 });
 
 const routesPath = path.join(__dirname, "routes");
+const socketsPath = path.join(__dirname, "sockets");
 
 app.use(express.json());
 app.use(cookieParser());
@@ -82,17 +88,25 @@ try {
 	);
 }
 
-io.on("connection", socket => {
-	console.log("User connected");
+// Register Sockets
+try {
+	fs.readdirSync(socketsPath).forEach(file => {
+		const { registerEvents, namespace } = require(path.join(
+			socketsPath,
+			file
+		));
 
-	socket.on("disconnect", () => {
-		console.log("User disconnected");
-	});
+		const nsp: Namespace = io.of(namespace);
 
-	socket.on("error", error => {
-		console.error(error);
+		nsp.on("connection", (socket: SocketWithAuth) => {
+			socket.onWithAuth = onWithAuth.bind(null, socket);
+
+			registerEvents(socket);
+		});
 	});
-});
+} catch (error) {
+	console.error(error);
+}
 
 const port = process.env.PORT || 8393;
 

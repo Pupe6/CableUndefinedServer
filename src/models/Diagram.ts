@@ -2,6 +2,7 @@ import { Schema, model, models, Types, PopulatedDoc, Document } from "mongoose";
 import { IUser } from "./User";
 
 export interface IDiagram {
+	_id: Types.ObjectId;
 	_owner: PopulatedDoc<IUser & Document>;
 	_collaborators: PopulatedDoc<IUser & Document>[];
 	// TODO: add parts
