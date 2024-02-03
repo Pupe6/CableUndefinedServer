@@ -11,6 +11,7 @@ export interface IUser {
 	updatedAt?: Date;
 }
 
+// TODO: fix the unique (and other) error messages
 const userSchema = new Schema<IUser>(
 	{
 		username: {

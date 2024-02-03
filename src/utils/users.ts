@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 import { User, IUser } from "../models/User";
 import { Errors } from "./errors";
+import { BannedToken } from "../models/BannedToken";
 
 async function getUsers(
 	query: FilterQuery<IUser> = {}
@@ -75,6 +76,11 @@ async function deleteUser(
 		// Verify User Ownership
 		if (!(await bcrypt.compare(userPassword, userToDelete.password)))
 			throw new Error(Errors.INVALID_CREDENTIALS);
+
+		// Ban the user's token
+		if (userToDelete._token) {
+			await BannedToken.create({ token: userToDelete._token });
+		}
 
 		await User.findByIdAndDelete(userId);
 
