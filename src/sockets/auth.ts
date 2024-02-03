@@ -10,7 +10,6 @@ import { SocketWithAuth } from "..";
 
 export function registerEvents(socket: SocketWithAuth) {
 	socket.on("auth:register", async data => {
-		console.log("test");
 		try {
 			const { username, email, password } = data;
 
@@ -28,7 +27,7 @@ export function registerEvents(socket: SocketWithAuth) {
 
 			if ("error" in user) {
 				// todo add error handling
-				return socket.emit("error", { error: user.error });
+				return socket.emit("error", { error: user.error.message });
 			}
 
 			user._token = jwt.sign(
@@ -41,7 +40,7 @@ export function registerEvents(socket: SocketWithAuth) {
 
 			await user.save();
 
-			socket.emit("user:register", {
+			socket.emit("auth:register", {
 				user: {
 					...user.toJSON(),
 					password: undefined,
@@ -66,7 +65,7 @@ export function registerEvents(socket: SocketWithAuth) {
 			const result = await getUsers({ email: email.toLowerCase() });
 
 			if ("error" in result) {
-				return socket.emit("error", { error: result.error });
+				return socket.emit("error", { error: result.error.message });
 			}
 
 			const user = result.users[0];

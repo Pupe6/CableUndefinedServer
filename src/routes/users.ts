@@ -10,9 +10,13 @@ export const router = Router();
 
 router.put("/:id", verifyJWT, async (req: UserRequest, res) => {
 	try {
+		if (!(req.params.id && req.body.password && req.body.user))
+			return res.status(400).json({ error: Errors.MISSING_FIELDS });
+
 		const user = await updateUser(
-			req.params._id as unknown as ObjectId,
-			req.body
+			req.params.id as unknown as ObjectId,
+			req.body.password,
+			req.body.user
 		);
 
 		if ("error" in user) {
@@ -31,17 +35,20 @@ router.put("/:id", verifyJWT, async (req: UserRequest, res) => {
 
 router.delete("/:id", verifyJWT, async (req: UserRequest, res) => {
 	try {
-		const user = await deleteUser(
-			req.params._id as unknown as ObjectId,
+		if (!(req.params.id && req.body.password))
+			return res.status(400).json({ error: Errors.MISSING_FIELDS });
+
+		const result = await deleteUser(
+			req.params.id as unknown as ObjectId,
 			req.body.password
 		);
 
-		if ("error" in user) {
+		if ("error" in result) {
 			// todo add error handling
-			return res.status(400).json({ error: user.error });
+			return res.status(400).json(result);
 		}
 
-		return res.status(200).json({ user });
+		return res.status(200).json(result);
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ error: Errors.INTERNAL_SERVER_ERROR });

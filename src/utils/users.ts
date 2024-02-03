@@ -22,11 +22,11 @@ async function getUsers(
 
 async function updateUser(
 	userId: ObjectId,
-	user: IUser & { newPassword?: string }
+	oldPassword: string,
+	user: IUser
 ): Promise<HydratedDocument<IUser> | { error: Error }> {
 	try {
-		if (!user.password)
-			throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
+		if (!oldPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
 		const userToUpdate: HydratedDocument<IUser> = await User.findById(
 			userId
@@ -39,10 +39,10 @@ async function updateUser(
 		if (!userToUpdate) throw new Error(Errors.USER_NOT_FOUND);
 
 		// Verify User Ownership
-		if (!(await bcrypt.compare(user.password, userToUpdate.password)))
+		if (!(await bcrypt.compare(oldPassword, userToUpdate.password)))
 			throw new Error(Errors.INVALID_CREDENTIALS);
 
-		const password = user.newPassword || user.password;
+		const password = user.password || oldPassword;
 
 		const updatedUser: HydratedDocument<IUser> =
 			await User.findByIdAndUpdate(
