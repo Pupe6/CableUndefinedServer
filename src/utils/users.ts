@@ -46,6 +46,10 @@ async function updateUser(
 
 		const password = user.password || oldPassword;
 
+		// delete _token and lastActivity fields so they don't get updated
+		delete user._token;
+		delete user.lastActivity;
+
 		const updatedUser: HydratedDocument<IUserDocument> =
 			await User.findByIdAndUpdate(
 				userId,

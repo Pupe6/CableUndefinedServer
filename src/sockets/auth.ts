@@ -70,8 +70,7 @@ export function registerEvents(socket: SocketWithAuth) {
 
 			const user = result.users[0];
 
-			// TODO: check if this is necessary
-			if ("error" in user) {
+			if (!user) {
 				return socket.emit("error", { error: Errors.USER_NOT_FOUND });
 			}
 
