@@ -1,13 +1,13 @@
 import { HydratedDocument } from "mongoose";
 import jwt from "jsonwebtoken";
-import { IUser, User } from "../models/User";
+import { IUserDocument, User } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
 import { Errors } from "../utils/errors";
 import { Socket } from "socket.io";
 
 async function authenticateSocket(
 	data: any
-): Promise<HydratedDocument<IUser> | Error> {
+): Promise<HydratedDocument<IUserDocument> | Error> {
 	let { token } = data;
 
 	try {
@@ -24,7 +24,7 @@ async function authenticateSocket(
 	try {
 		const decodedJWT = jwt.verify(token, process.env.TOKEN_KEY);
 
-		const user: HydratedDocument<IUser> = await User.findOne({
+		const user = await User.findOne({
 			_id: (decodedJWT as any)._id,
 		});
 

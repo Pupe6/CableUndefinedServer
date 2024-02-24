@@ -1,19 +1,20 @@
 import { ObjectId, HydratedDocument, FilterQuery } from "mongoose";
 import bcrypt from "bcryptjs";
 
-import { User, IUser } from "../models/User";
+import { User, IUserDocument, IUser } from "../models/User";
 import { Errors } from "./errors";
 import { BannedToken } from "../models/BannedToken";
 
 async function getUsers(
-	query: FilterQuery<IUser> = {}
+	query: FilterQuery<IUserDocument> = {}
 ): Promise<
-	{ error: Error } | { count: number; users: HydratedDocument<IUser>[] }
+	| { error: Error }
+	| { count: number; users: HydratedDocument<IUserDocument>[] }
 > {
 	try {
 		const count = await User.countDocuments(query);
 
-		const users: HydratedDocument<IUser>[] = await User.find(query);
+		const users: HydratedDocument<IUserDocument>[] = await User.find(query);
 
 		return { count, users };
 	} catch (error) {
@@ -24,15 +25,15 @@ async function getUsers(
 async function updateUser(
 	userId: ObjectId,
 	oldPassword: string,
-	user: IUser
-): Promise<HydratedDocument<IUser> | { error: Error }> {
+	user: Partial<IUser>
+): Promise<HydratedDocument<IUserDocument> | { error: Error }> {
 	try {
 		if (!oldPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
-		const userToUpdate: HydratedDocument<IUser> = await User.findById(
-			userId
-		);
+		const userToUpdate: HydratedDocument<IUserDocument> =
+			await User.findById(userId);
 
+		// Remove empty fields
 		for (let key in user) {
 			if (!user[key]) delete user[key];
 		}
@@ -45,7 +46,7 @@ async function updateUser(
 
 		const password = user.password || oldPassword;
 
-		const updatedUser: HydratedDocument<IUser> =
+		const updatedUser: HydratedDocument<IUserDocument> =
 			await User.findByIdAndUpdate(
 				userId,
 				{ ...user, password: await bcrypt.hash(password, 10) },
@@ -67,9 +68,8 @@ async function deleteUser(
 	try {
 		if (!userPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
-		const userToDelete: HydratedDocument<IUser> = await User.findById(
-			userId
-		);
+		const userToDelete: HydratedDocument<IUserDocument> =
+			await User.findById(userId);
 
 		if (!userToDelete) throw new Error(Errors.USER_NOT_FOUND);
 
@@ -90,11 +90,14 @@ async function deleteUser(
 	}
 }
 
+// TODO: maybe omit the lastActivity and _token field
 async function createUser(
 	user: IUser
-): Promise<HydratedDocument<IUser> | { error: Error }> {
+): Promise<HydratedDocument<IUserDocument> | { error: Error }> {
 	try {
-		const newUser: HydratedDocument<IUser> = await new User(user).save();
+		const newUser: HydratedDocument<IUserDocument> = await new User(
+			user
+		).save();
 
 		return newUser;
 	} catch (error) {

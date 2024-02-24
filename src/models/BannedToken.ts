@@ -1,13 +1,12 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface IBannedToken {
-	_id?: string;
 	token: string;
-	createdAt?: Date;
-	updatedAt?: Date;
 }
 
-const bannedTokenSchema = new Schema<IBannedToken>(
+export interface IBannedTokenDocument extends IBannedToken, Document {}
+
+const bannedTokenSchema = new Schema<IBannedTokenDocument>(
 	{
 		token: {
 			type: String,
@@ -17,5 +16,7 @@ const bannedTokenSchema = new Schema<IBannedToken>(
 	{ timestamps: true, versionKey: false }
 );
 
-export const BannedToken =
-	models["BannedToken"] || model("BannedToken", bannedTokenSchema);
+export const BannedToken = model<IBannedTokenDocument>(
+	"BannedToken",
+	bannedTokenSchema
+);

@@ -11,7 +11,7 @@ export const router = Router();
 router.post("/predict", verifyJWT, async (req, res) => {
 	const { microcontroller, module } = req.body;
 
-	if (microcontroller === undefined || module === undefined)
+	if (!(microcontroller && module))
 		return res.status(400).json({ error: Errors.MISSING_FIELDS });
 
 	try {

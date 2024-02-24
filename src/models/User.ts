@@ -1,18 +1,17 @@
-import { Schema, model, models } from "mongoose";
+import { Document, Schema, model } from "mongoose";
 
 export interface IUser {
-	_id?: string;
 	username: string;
 	email: string;
 	password: string;
 	lastActivity?: Date;
 	_token?: string | null;
-	createdAt?: Date;
-	updatedAt?: Date;
 }
 
+export interface IUserDocument extends IUser, Document {}
+
 // TODO: fix the unique (and other) error messages
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema<IUserDocument>(
 	{
 		username: {
 			type: String,
@@ -47,4 +46,4 @@ const userSchema = new Schema<IUser>(
 	{ timestamps: true, versionKey: false }
 );
 
-export const User = models["User"] || model("User", userSchema);
+export const User = model<IUserDocument>("User", userSchema);

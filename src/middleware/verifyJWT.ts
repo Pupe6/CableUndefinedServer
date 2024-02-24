@@ -2,20 +2,20 @@ import { Request, Response, NextFunction } from "express";
 import { HydratedDocument } from "mongoose";
 import jwt from "jsonwebtoken";
 
-import { IUser, User } from "../models/User";
+import { IUserDocument, User } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
 
 import { Errors } from "../utils/errors";
 
 export interface UserRequest extends Request {
-	user: HydratedDocument<IUser>;
+	user: HydratedDocument<IUserDocument>;
 }
 
-export const verifyJWT = async (
+export async function verifyJWT(
 	req: UserRequest,
 	res: Response,
 	next: NextFunction
-) => {
+) {
 	const token: string = req.cookies.token;
 
 	try {
@@ -34,6 +34,7 @@ export const verifyJWT = async (
 			});
 	} catch (error) {
 		console.error(error);
+
 		res.status(500).json({
 			error: Errors.INTERNAL_SERVER_ERROR,
 			valid: false,
@@ -43,7 +44,7 @@ export const verifyJWT = async (
 	try {
 		const decodedJWT = jwt.verify(token, <string>process.env.TOKEN_KEY);
 
-		const user: HydratedDocument<IUser> = await User.findOne({
+		const user = await User.findOne({
 			_id: (decodedJWT as any)._id,
 		});
 
@@ -80,4 +81,4 @@ export const verifyJWT = async (
 	}
 
 	return next();
-};
+}
