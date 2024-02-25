@@ -13,17 +13,33 @@ export interface DiagramsElement {
 	updated: number;
 }
 
-type Breadboard = "MCU" | "MAIN";
-// TODO: Be able to know which pin of + or - is being used (ie the 25th + pin of the breadboard)
-type Rows =
-	| `${0 | 1 | 2 | 3 | 4 | 5}${0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9}`
-	| "+"
-	| "-";
+type Enumerate<
+	N extends number,
+	Acc extends number[] = []
+> = Acc["length"] extends N
+	? Acc[number]
+	: Enumerate<N, [...Acc, Acc["length"]]>;
+
+type IntRange<F extends number, T extends number> = Exclude<
+	Enumerate<T>,
+	Enumerate<F>
+>;
+
+type PowerType = "+" | "-";
+type PowerRow = IntRange<0, 25>;
+type PowerColumn = "l" | "r";
+
+type OtherColumn = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j";
+type MCURow = IntRange<0, 20>;
+type MAINRow = IntRange<0, 30>;
 
 // Based on the breadboard type use the correct row type
-export type Pin = `${Breadboard}${Rows}`;
+type PowerPin = `MAIN${PowerType}${PowerColumn}${PowerRow}`;
+type MCUPin = `MCU${OtherColumn}${MCURow}`;
+type MAINPin = `MAIN${OtherColumn}${MAINRow}`;
+export type Pin = PowerPin | MCUPin | MAINPin;
 
-export type Connection = `${Pin} - ${Pin}`;
+export type Connection = [Pin, Pin];
 
 export interface IDiagram {
 	_owner: PopulatedDoc<IUser & Document>;
@@ -54,10 +70,16 @@ const diagramSchema = new Schema<IDiagramDocument>(
 		],
 		connections: [
 			// ! Use the Connection type as the array type
-			{
-				type: String,
-				required: true,
-			},
+			[
+				{
+					type: String,
+					required: true,
+				},
+				{
+					type: String,
+					required: true,
+				},
+			],
 		],
 	},
 	{ timestamps: true, versionKey: false }
