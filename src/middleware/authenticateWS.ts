@@ -1,23 +1,33 @@
 import { HydratedDocument } from "mongoose";
 import jwt from "jsonwebtoken";
-import { IUserDocument, User } from "../models/User";
+import { User, IUser } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
 import { Errors } from "../utils/errors";
 import { Socket } from "socket.io";
+import { z } from "zod";
+
+const authenticationSchema = z
+	.object({
+		token: z.string(),
+	})
+	.strict();
 
 async function authenticateSocket(
 	data: any
-): Promise<HydratedDocument<IUserDocument> | Error> {
-	let { token } = data;
+): Promise<HydratedDocument<IUser> | Error> {
+	const parsedData = authenticationSchema.safeParse(data);
+
+	if (parsedData.success === false) return new Error(Errors.INVALID_FIELDS);
+
+	const { token } = parsedData.data;
 
 	try {
-		if (!token) return new Error(Errors.NO_SESSION);
-
 		const bannedToken = await BannedToken.findOne({ token });
 
 		if (bannedToken) return new Error(Errors.EXPIRED_TOKEN);
 	} catch (error) {
 		console.error(error);
+
 		return new Error(Errors.INTERNAL_SERVER_ERROR);
 	}
 
@@ -28,7 +38,7 @@ async function authenticateSocket(
 			_id: (decodedJWT as any)._id,
 		});
 
-		if (!user) return new Error(Errors.USER_NOT_FOUND);
+		if (!user) return new Error(Errors.NOT_FOUND);
 
 		await User.updateOne({ _id: user._id }, { lastActivity: new Date() });
 

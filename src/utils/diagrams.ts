@@ -20,6 +20,36 @@ async function getDiagrams(
 	}
 }
 
-// TODO: add the rest of the functions
+async function deleteDiagram(
+	diagramId: string
+): Promise<{ message: string } | { error: Error }> {
+	try {
+		if (!diagramId) throw new Error(Errors.MISSING_FIELDS);
 
-export { getDiagrams };
+		const diagramToDelete: HydratedDocument<IDiagramDocument> =
+			await Diagram.findById(diagramId);
+
+		if (!diagramToDelete) throw new Error(Errors.NOT_FOUND);
+
+		await Diagram.findByIdAndDelete(diagramId);
+
+		return { message: "Diagram has been deleted." };
+	} catch (error) {
+		return { error };
+	}
+}
+
+async function createDiagram(
+	ownerId: string
+): Promise<HydratedDocument<IDiagramDocument> | { error: Error }> {
+	try {
+		const newDiagram: HydratedDocument<IDiagramDocument> =
+			await new Diagram({ _owner: ownerId }).save();
+
+		return newDiagram;
+	} catch (error) {
+		return { error };
+	}
+}
+
+export { getDiagrams, deleteDiagram };

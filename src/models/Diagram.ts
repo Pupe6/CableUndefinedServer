@@ -53,7 +53,10 @@ export interface IDiagramDocument extends IDiagram, Document {}
 const diagramSchema = new Schema<IDiagramDocument>(
 	{
 		_owner: { type: Types.ObjectId, required: true, ref: "User" },
-		_collaborators: [{ type: Types.ObjectId, required: true, ref: "User" }],
+		_collaborators: {
+			type: [{ type: Types.ObjectId, required: true, ref: "User" }],
+			default: [],
+		},
 		parts: [
 			// ! Use the DiagramsElement type as the array type
 			{

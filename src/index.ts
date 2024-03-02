@@ -110,6 +110,8 @@ try {
 
 const port = process.env.PORT || 8393;
 
+mongoose.set("strictQuery", false);
+
 // Connect To MongoDB
 mongoose.connect(process.env.DB_URI).then(() => {
 	console.log("Connected to MongoDB");

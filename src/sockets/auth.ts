@@ -6,16 +6,30 @@ import { createUser, getUsers } from "../utils/users";
 
 import { User } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
+import { z, mongooseZodCustomType } from "mongoose-zod";
 import { SocketWithAuth } from "..";
 
 export function registerEvents(socket: SocketWithAuth) {
-	socket.on("auth:register", async data => {
-		try {
-			const { username, email, password } = data;
+	const authRegisterSchema = z
+		.object({
+			username: z.string(),
+			email: z.string(),
+			password: z.string(),
+		})
+		.strict();
 
-			if (!(username && email && password)) {
-				return socket.emit("error", { error: Errors.MISSING_FIELDS });
-			}
+	socket.on("auth:register", async (data: unknown) => {
+		try {
+			const parsedData = authRegisterSchema.safeParse(data);
+
+			if (parsedData.success === false)
+				// TODO: rename error
+				return socket.emit("error", {
+					error: Errors.INVALID_FIELDS,
+					errors: parsedData.error,
+				});
+
+			const { username, email, password } = parsedData.data;
 
 			let encryptedPassword = await bcrypt.hash(password, 10);
 
@@ -48,19 +62,32 @@ export function registerEvents(socket: SocketWithAuth) {
 			});
 		} catch (error) {
 			console.error(error);
+
 			socket.emit("error", {
 				error: Errors.INTERNAL_SERVER_ERROR,
 			});
 		}
 	});
 
-	socket.on("auth:login", async data => {
-		try {
-			const { email, password } = data;
+	const authLoginSchema = z
+		.object({
+			email: z.string(),
+			password: z.string(),
+		})
+		.strict();
 
-			if (!(email && password)) {
-				return socket.emit("error", { error: Errors.MISSING_FIELDS });
-			}
+	socket.on("auth:login", async (data: unknown) => {
+		try {
+			const parsedData = authLoginSchema.safeParse(data);
+
+			if (parsedData.success === false)
+				// TODO: rename error
+				return socket.emit("error", {
+					error: Errors.INVALID_FIELDS,
+					errors: parsedData.error,
+				});
+
+			const { email, password } = parsedData.data;
 
 			const result = await getUsers({ email: email.toLowerCase() });
 
@@ -71,7 +98,7 @@ export function registerEvents(socket: SocketWithAuth) {
 			const user = result.users[0];
 
 			if (!user) {
-				return socket.emit("error", { error: Errors.USER_NOT_FOUND });
+				return socket.emit("error", { error: Errors.NOT_FOUND });
 			}
 
 			if (!(await bcrypt.compare(password, user.password))) {
@@ -107,15 +134,32 @@ export function registerEvents(socket: SocketWithAuth) {
 			});
 		} catch (error) {
 			console.error(error);
+
 			socket.emit("error", {
 				error: Errors.INTERNAL_SERVER_ERROR,
 			});
 		}
 	});
 
-	socket.onWithAuth("auth:logout", async data => {
+	const authLogoutSchema = z
+		.object({
+			token: z.string(),
+			user: z.object({ _id: mongooseZodCustomType("ObjectId") }),
+		})
+		.strict();
+
+	socket.onWithAuth("auth:logout", async (data: unknown) => {
 		try {
-			const { token, user } = data;
+			const parsedData = authLogoutSchema.safeParse(data);
+
+			if (parsedData.success === false)
+				// TODO: rename error
+				return socket.emit("error", {
+					error: Errors.INVALID_FIELDS,
+					errors: parsedData.error,
+				});
+
+			const { token, user } = parsedData.data;
 
 			await User.findByIdAndUpdate(user._id, { _token: null });
 
@@ -126,6 +170,7 @@ export function registerEvents(socket: SocketWithAuth) {
 			});
 		} catch (error) {
 			console.error(error);
+
 			socket.emit("error", {
 				error: Errors.INTERNAL_SERVER_ERROR,
 			});

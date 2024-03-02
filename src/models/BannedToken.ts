@@ -1,22 +1,16 @@
-import { Schema, model, Document } from "mongoose";
+import { model } from "mongoose";
+import { toMongooseSchema, z } from "mongoose-zod";
 
-export interface IBannedToken {
-	token: string;
-}
+export const BannedTokenSchema = z
+	.object({
+		token: z.string().min(1),
+	})
+	.mongoose({
+		schemaOptions: { timestamps: true, versionKey: false },
+	});
 
-export interface IBannedTokenDocument extends IBannedToken, Document {}
+export type IBannedToken = z.infer<typeof BannedTokenSchema>;
 
-const bannedTokenSchema = new Schema<IBannedTokenDocument>(
-	{
-		token: {
-			type: String,
-			required: [true, "Token is required."],
-		},
-	},
-	{ timestamps: true, versionKey: false }
-);
+const BannedTokenMongooseSchema = toMongooseSchema(BannedTokenSchema);
 
-export const BannedToken = model<IBannedTokenDocument>(
-	"BannedToken",
-	bannedTokenSchema
-);
+export const BannedToken = model("BannedToken", BannedTokenMongooseSchema);

@@ -1,44 +1,39 @@
-import { ObjectId, HydratedDocument, FilterQuery } from "mongoose";
+import { HydratedDocument, FilterQuery } from "mongoose";
 import bcrypt from "bcryptjs";
 
-import { User, IUserDocument, IUser } from "../models/User";
+import { User, IUser } from "../models/User";
 import { Errors } from "./errors";
 import { BannedToken } from "../models/BannedToken";
 
-async function getUsers(
-	query: FilterQuery<IUserDocument> = {}
-): Promise<
-	| { error: Error }
-	| { count: number; users: HydratedDocument<IUserDocument>[] }
-> {
+async function getUsers(query: FilterQuery<IUser> = {}) {
 	try {
-		const count = await User.countDocuments(query);
+		const users: HydratedDocument<IUser>[] = await User.find(query);
 
-		const users: HydratedDocument<IUserDocument>[] = await User.find(query);
-
-		return { count, users };
+		return { users };
 	} catch (error) {
 		return { error };
 	}
 }
 
 async function updateUser(
-	userId: ObjectId,
+	userId: Pick<IUser, "_id">,
 	oldPassword: string,
-	user: Partial<IUser>
-): Promise<HydratedDocument<IUserDocument> | { error: Error }> {
+	user: Partial<Omit<IUser, "lastActivity" | "_token">>
+): Promise<HydratedDocument<IUser> | { error: Error }> {
 	try {
 		if (!oldPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
-		const userToUpdate: HydratedDocument<IUserDocument> =
-			await User.findById(userId);
+		const userToUpdate: HydratedDocument<IUser> = await User.findById(
+			userId
+		);
 
+		// ! Might break the code
 		// Remove empty fields
-		for (let key in user) {
-			if (!user[key]) delete user[key];
-		}
+		// for (let key in user) {
+		// 	if (!user[key]) delete user[key];
+		// }
 
-		if (!userToUpdate) throw new Error(Errors.USER_NOT_FOUND);
+		if (!userToUpdate) throw new Error(Errors.NOT_FOUND);
 
 		// Verify User Ownership
 		if (!(await bcrypt.compare(oldPassword, userToUpdate.password)))
@@ -46,11 +41,12 @@ async function updateUser(
 
 		const password = user.password || oldPassword;
 
+		// ~ should be removed
 		// delete _token and lastActivity fields so they don't get updated
-		delete user._token;
-		delete user.lastActivity;
+		// delete user._token;
+		// delete user.lastActivity;
 
-		const updatedUser: HydratedDocument<IUserDocument> =
+		const updatedUser: HydratedDocument<IUser> =
 			await User.findByIdAndUpdate(
 				userId,
 				{ ...user, password: await bcrypt.hash(password, 10) },
@@ -66,16 +62,17 @@ async function updateUser(
 }
 
 async function deleteUser(
-	userId: ObjectId,
+	userId: Pick<IUser, "_id">,
 	userPassword: string
 ): Promise<{ message: string } | { error: Error }> {
 	try {
 		if (!userPassword) throw new Error(Errors.PASSWORD_REQUIRED_FOR_ACTION);
 
-		const userToDelete: HydratedDocument<IUserDocument> =
-			await User.findById(userId);
+		const userToDelete: HydratedDocument<IUser> = await User.findById(
+			userId
+		);
 
-		if (!userToDelete) throw new Error(Errors.USER_NOT_FOUND);
+		if (!userToDelete) throw new Error(Errors.NOT_FOUND);
 
 		// Verify User Ownership
 		if (!(await bcrypt.compare(userPassword, userToDelete.password)))
@@ -94,14 +91,11 @@ async function deleteUser(
 	}
 }
 
-// TODO: maybe omit the lastActivity and _token field
 async function createUser(
-	user: IUser
-): Promise<HydratedDocument<IUserDocument> | { error: Error }> {
+	user: Omit<IUser, "_id" | "lastActivity" | "_token">
+): Promise<HydratedDocument<IUser> | { error: Error }> {
 	try {
-		const newUser: HydratedDocument<IUserDocument> = await new User(
-			user
-		).save();
+		const newUser: HydratedDocument<IUser> = await new User(user).save();
 
 		return newUser;
 	} catch (error) {
