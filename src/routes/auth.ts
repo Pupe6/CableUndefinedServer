@@ -77,7 +77,7 @@ router.post("/login", async (req, res) => {
 			return res.status(400).json({ error: result.error });
 		}
 
-		const user = result.users[0];
+		const user = result[0];
 
 		// todo add error handling
 		if ("error" in user) return res.status(400).json({ error: user.error });

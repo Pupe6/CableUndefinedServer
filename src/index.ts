@@ -68,25 +68,25 @@ app.use((req, res, next) => {
 });
 
 // Register Routes
-try {
-	fs.readdirSync(routesPath).forEach(file => {
-		const route = require(path.join(routesPath, file));
-		app.use(route.path, route.router);
-	});
+// try {
+// 	fs.readdirSync(routesPath).forEach(file => {
+// 		const route = require(path.join(routesPath, file));
+// 		app.use(route.path, route.router);
+// 	});
 
-	app.all("*", (_, res) =>
-		res.status(404).json({
-			error: Errors.NOT_FOUND,
-		})
-	);
-} catch (error) {
-	console.error(error);
-	app.all("*", (_, res) =>
-		res.status(500).json({
-			error: Errors.INTERNAL_SERVER_ERROR,
-		})
-	);
-}
+// 	app.all("*", (_, res) =>
+// 		res.status(404).json({
+// 			error: Errors.NOT_FOUND,
+// 		})
+// 	);
+// } catch (error) {
+// 	console.error(error);
+// 	app.all("*", (_, res) =>
+// 		res.status(500).json({
+// 			error: Errors.INTERNAL_SERVER_ERROR,
+// 		})
+// 	);
+// }
 
 // Register Sockets
 try {

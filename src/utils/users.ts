@@ -5,11 +5,13 @@ import { User, IUser } from "../models/User";
 import { Errors } from "./errors";
 import { BannedToken } from "../models/BannedToken";
 
-async function getUsers(query: FilterQuery<IUser> = {}) {
+async function getUsers(
+	query: FilterQuery<IUser> = {}
+): Promise<HydratedDocument<IUser>[] | { error: Error }> {
 	try {
 		const users: HydratedDocument<IUser>[] = await User.find(query);
 
-		return { users };
+		return users;
 	} catch (error) {
 		return { error };
 	}
@@ -27,12 +29,6 @@ async function updateUser(
 			userId
 		);
 
-		// ! Might break the code
-		// Remove empty fields
-		// for (let key in user) {
-		// 	if (!user[key]) delete user[key];
-		// }
-
 		if (!userToUpdate) throw new Error(Errors.NOT_FOUND);
 
 		// Verify User Ownership
@@ -40,11 +36,6 @@ async function updateUser(
 			throw new Error(Errors.INVALID_CREDENTIALS);
 
 		const password = user.password || oldPassword;
-
-		// ~ should be removed
-		// delete _token and lastActivity fields so they don't get updated
-		// delete user._token;
-		// delete user.lastActivity;
 
 		const updatedUser: HydratedDocument<IUser> =
 			await User.findByIdAndUpdate(

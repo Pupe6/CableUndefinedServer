@@ -95,7 +95,7 @@ export function registerEvents(socket: SocketWithAuth) {
 				return socket.emit("error", { error: result.error.message });
 			}
 
-			const user = result.users[0];
+			const user = result[0];
 
 			if (!user) {
 				return socket.emit("error", { error: Errors.NOT_FOUND });

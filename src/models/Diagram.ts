@@ -1,17 +1,5 @@
-import { Schema, model, Types, PopulatedDoc, Document } from "mongoose";
-import { IUser } from "./User";
-
-export interface DiagramsElement {
-	id: number;
-	x: number;
-	y: number;
-	name: string;
-	type: string;
-	angle: number;
-	locked: boolean;
-	version: number;
-	updated: number;
-}
+import { model, Types } from "mongoose";
+import { z, mongooseZodCustomType, toMongooseSchema } from "mongoose-zod";
 
 type Enumerate<
 	N extends number,
@@ -25,67 +13,73 @@ type IntRange<F extends number, T extends number> = Exclude<
 	Enumerate<F>
 >;
 
-type PowerType = "+" | "-";
-type PowerRow = IntRange<0, 25>;
-type PowerColumn = "l" | "r";
+// type PowerType = "+" | "-";
+// type PowerRow = IntRange<0, 25>;
+// type PowerColumn = "L" | "R";
 
-type OtherColumn = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j";
-type MCURow = IntRange<0, 20>;
-type MAINRow = IntRange<0, 30>;
+type OtherColumn = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
+type MCURow = IntRange<0, 4>;
+type MAINRow = IntRange<0, 12>;
 
 // Based on the breadboard type use the correct row type
-type PowerPin = `MAIN${PowerType}${PowerColumn}${PowerRow}`;
+// type PowerPin = `MAIN${PowerType}${PowerColumn}${PowerRow}`;
 type MCUPin = `MCU${OtherColumn}${MCURow}`;
 type MAINPin = `MAIN${OtherColumn}${MAINRow}`;
-export type Pin = PowerPin | MCUPin | MAINPin;
+type Pin = MCUPin | MAINPin;
 
-export type Connection = [Pin, Pin];
+const PinSchema = z
+	.string()
+	.regex(/^MCU[A-H][0-3]|MAIN[A-H]([0-9]|1[01])$/) as z.ZodType<
+	Pin,
+	any,
+	any
+>;
 
-export interface IDiagram {
-	_owner: PopulatedDoc<IUser & Document>;
-	_collaborators: PopulatedDoc<IUser & Document>[];
-	parts: DiagramsElement[];
-	connections: Connection[];
-}
+export const ConnectionSchema = z.tuple([PinSchema, PinSchema]);
 
-export interface IDiagramDocument extends IDiagram, Document {}
+export type Connection = z.infer<typeof ConnectionSchema>;
 
-const diagramSchema = new Schema<IDiagramDocument>(
-	{
-		_owner: { type: Types.ObjectId, required: true, ref: "User" },
-		_collaborators: {
-			type: [{ type: Types.ObjectId, required: true, ref: "User" }],
-			default: [],
+// ! Note this doesn't check if id is a unique id
+// TODO: Add a check for unique id
+export const PartSchema = z.object({
+	id: z.number(),
+	x: z.number(),
+	y: z.number(),
+	name: z.string(),
+	type: z.string(),
+	angle: z.number(),
+	locked: z.boolean(),
+	version: z.number(),
+	updated: z.number(),
+});
+
+// TODO: ADD NAME TO DIAGRAM
+export const DiagramSchema = z
+	.object({
+		_id: mongooseZodCustomType("ObjectId")
+			.optional()
+			.default(new Types.ObjectId()),
+		_owner: mongooseZodCustomType("ObjectId"),
+		_collaborators: z
+			.array(mongooseZodCustomType("ObjectId"))
+			.optional()
+			.default([]),
+		parts: z.array(PartSchema).optional().default([]),
+		connections: z.array(ConnectionSchema).optional().default([]),
+		createdAt: z.date().optional().default(new Date()),
+		updatedAt: z.date().optional().default(new Date()),
+	})
+	.strict()
+	.mongoose({
+		schemaOptions: { timestamps: true, versionKey: false },
+		typeOptions: {
+			_owner: { required: true, ref: "User" },
+			_collaborators: { ref: "User" },
 		},
-		parts: [
-			// ! Use the DiagramsElement type as the array type
-			{
-				id: { type: Number },
-				x: { type: Number },
-				y: { type: Number },
-				name: { type: String },
-				type: { type: String },
-				angle: { type: Number },
-				locked: { type: Boolean },
-				version: { type: Number },
-				updated: { type: Number },
-			},
-		],
-		connections: [
-			// ! Use the Connection type as the array type
-			[
-				{
-					type: String,
-					required: true,
-				},
-				{
-					type: String,
-					required: true,
-				},
-			],
-		],
-	},
-	{ timestamps: true, versionKey: false }
-);
+	});
 
-export const Diagram = model<IDiagramDocument>("Diagram", diagramSchema);
+export type IDiagram = z.infer<typeof DiagramSchema>;
+
+const DiagramMongooseSchema = toMongooseSchema(DiagramSchema);
+
+export const Diagram = model("Diagram", DiagramMongooseSchema);
