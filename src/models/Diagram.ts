@@ -53,12 +53,10 @@ export const PartSchema = z.object({
 	updated: z.number(),
 });
 
-// TODO: ADD NAME TO DIAGRAM
 export const DiagramSchema = z
 	.object({
-		_id: mongooseZodCustomType("ObjectId")
-			.optional()
-			.default(new Types.ObjectId()),
+		_id: mongooseZodCustomType("ObjectId").optional(),
+		name: z.string().optional().default("New Diagram"),
 		_owner: mongooseZodCustomType("ObjectId"),
 		_collaborators: z
 			.array(mongooseZodCustomType("ObjectId"))
@@ -73,6 +71,7 @@ export const DiagramSchema = z
 	.mongoose({
 		schemaOptions: { timestamps: true, versionKey: false },
 		typeOptions: {
+			_id: { index: true, unique: true, auto: true },
 			_owner: { required: true, ref: "User" },
 			_collaborators: { ref: "User" },
 		},

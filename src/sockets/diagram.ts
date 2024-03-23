@@ -8,6 +8,7 @@ import {
 	deleteDiagram,
 	deletePart,
 	getDiagrams,
+	updateDiagram,
 	updatePart,
 } from "../utils/diagrams";
 import { Errors } from "../utils/errors";
@@ -66,7 +67,12 @@ export function registerEvents(socket: SocketWithAuth) {
 		}
 	});
 
-	const diagramsCreateSchema = JWTUserSchema;
+	const diagramsCreateSchema = z
+		.object({
+			name: z.string().optional().default("New Diagram"),
+		})
+		.merge(JWTUserSchema)
+		.strict();
 
 	// create a new diagram
 	socket.onWithAuth("diagrams:create", async (data: unknown) => {
@@ -81,9 +87,9 @@ export function registerEvents(socket: SocketWithAuth) {
 				});
 			}
 
-			const { user } = parsedData.data;
+			const { user, name } = parsedData.data;
 
-			const diagram = await createDiagram(user._id);
+			const diagram = await createDiagram(user._id, name);
 
 			if ("error" in diagram) {
 				return socket.emit("error", {
@@ -92,6 +98,77 @@ export function registerEvents(socket: SocketWithAuth) {
 			}
 
 			socket.emit("diagrams:create", { diagram });
+		} catch (error) {
+			console.error(error);
+
+			socket.emit("error", { error: Errors.INTERNAL_SERVER_ERROR });
+		}
+	});
+
+	const diagramsUpdateSchema = z
+		.object({
+			diagram: z.object({
+				_id: z.string().refine(Types.ObjectId.isValid),
+			}),
+			update: z
+				.object({
+					name: z.string().optional(),
+					description: z.string().optional(),
+				})
+				.strict(),
+		})
+		.merge(JWTUserSchema)
+		.strict();
+
+	// update a diagram
+	socket.onWithAuth("diagrams:update", async (data: unknown) => {
+		try {
+			const parsedData = diagramsUpdateSchema.safeParse(data);
+
+			if (parsedData.success === false) {
+				return socket.emit("error", {
+					error: Errors.INVALID_FIELDS,
+					errors: parsedData.error,
+				});
+			}
+
+			const { diagram, update, user } = parsedData.data;
+
+			const diagramToUpdate = await getDiagrams({
+				_id: new Types.ObjectId(diagram._id),
+			});
+
+			if ("error" in diagramToUpdate) {
+				return socket.emit("error", {
+					error: diagramToUpdate.error.message,
+				});
+			}
+
+			if (diagramToUpdate.length === 0) {
+				return socket.emit("error", {
+					error: Errors.NOT_FOUND,
+				});
+			}
+
+			// check if the user is the owner of the diagram
+			if (!diagramToUpdate[0]._owner.equals(user._id)) {
+				return socket.emit("error", {
+					error: Errors.UNAUTHORIZED,
+				});
+			}
+
+			const result = await updateDiagram(
+				new Types.ObjectId(diagram._id),
+				update
+			);
+
+			if ("error" in result) {
+				return socket.emit("error", {
+					error: result.error.message,
+				});
+			}
+
+			socket.emit("diagrams:update", result);
 		} catch (error) {
 			console.error(error);
 

@@ -16,6 +16,25 @@ async function getDiagrams(
 	}
 }
 
+async function updateDiagram(
+	diagramId: Pick<IDiagram, "_id">,
+	diagram: Partial<Omit<IDiagram, "_id">>
+): Promise<HydratedDocument<IDiagram> | { error: Error }> {
+	try {
+		const diagramToUpdate: HydratedDocument<IDiagram> =
+			await Diagram.findById(diagramId);
+
+		if (!diagramToUpdate) throw new Error(Errors.NOT_FOUND);
+
+		const updatedDiagram: HydratedDocument<IDiagram> =
+			await Diagram.findByIdAndUpdate(diagramId, diagram, { new: true });
+
+		return updatedDiagram;
+	} catch (error) {
+		return { error };
+	}
+}
+
 async function deleteDiagram(
 	diagramId: Pick<IDiagram, "_id">
 ): Promise<{ message: string } | { error: Error }> {
@@ -33,12 +52,16 @@ async function deleteDiagram(
 	}
 }
 
+// TODO: change the pick to use _owner instead of _id
+// ! this was causing an error in the socket definitions
 async function createDiagram(
-	ownerId: Pick<IDiagram, "_id">
+	ownerId: Pick<IDiagram, "_id">,
+	name: string = "New Diagram"
 ): Promise<HydratedDocument<IDiagram> | { error: Error }> {
 	try {
 		const newDiagram: HydratedDocument<IDiagram> = await new Diagram({
 			_owner: ownerId,
+			name,
 		}).save();
 
 		return newDiagram;
@@ -46,8 +69,6 @@ async function createDiagram(
 		return { error };
 	}
 }
-
-// TODO: Implement updateDiagram function to update the diagram's name, collaborators, and owner
 
 function connectionsMatch(
 	connection1: Connection,
@@ -178,6 +199,7 @@ async function updatePart(
 export {
 	getDiagrams,
 	createDiagram,
+	updateDiagram,
 	deleteDiagram,
 	createConnection,
 	deleteConnection,
