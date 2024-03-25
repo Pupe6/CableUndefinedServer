@@ -17,6 +17,7 @@ export const JWTUserSchema = z
 			updatedAt: z.date(),
 			lastActivity: z.date(),
 		}),
+		token: z.string(),
 	})
 	.strict();
 
@@ -79,9 +80,6 @@ async function authenticateSocket(data: any): Promise<
 		delete user._token;
 
 		data.user = user;
-
-		// remove the token from the data object
-		delete data.token;
 	} catch (error) {
 		return { error: new Error(Errors.INVALID_TOKEN) };
 	}

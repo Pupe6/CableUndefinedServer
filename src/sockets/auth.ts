@@ -6,8 +6,9 @@ import { createUser, getUsers } from "../utils/users";
 
 import { User } from "../models/User";
 import { BannedToken } from "../models/BannedToken";
-import { z, mongooseZodCustomType } from "mongoose-zod";
+import { z } from "mongoose-zod";
 import { SocketWithAuth } from "..";
+import { JWTUserSchema } from "../middleware/authenticateWS";
 
 export function registerEvents(socket: SocketWithAuth) {
 	const authRegisterSchema = z
@@ -141,12 +142,7 @@ export function registerEvents(socket: SocketWithAuth) {
 		}
 	});
 
-	const authLogoutSchema = z
-		.object({
-			token: z.string(),
-			user: z.object({ _id: mongooseZodCustomType("ObjectId") }),
-		})
-		.strict();
+	const authLogoutSchema = JWTUserSchema.strict();
 
 	socket.onWithAuth("auth:logout", async (data: unknown) => {
 		try {
