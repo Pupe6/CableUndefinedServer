@@ -18,7 +18,7 @@ router.get("/:id", verifyJWT, async (req: UserRequest, res) => {
 			return res.status(500).json({ error: results.error });
 		}
 
-		const diagram = results.diagrams[0];
+		const diagram = results[0];
 
 		if (!diagram) {
 			return res.status(404).json({ error: Errors.NOT_FOUND });
@@ -26,7 +26,7 @@ router.get("/:id", verifyJWT, async (req: UserRequest, res) => {
 
 		if (
 			!diagram._collaborators.includes(user._id) &&
-			diagram._owner !== user._id
+			!diagram._owner.equals(user._id)
 		) {
 			return res.status(403).json({ error: Errors.INVALID_CREDENTIALS });
 		}

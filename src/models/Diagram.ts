@@ -1,4 +1,4 @@
-import { model, Types } from "mongoose";
+import { model } from "mongoose";
 import { z, mongooseZodCustomType, toMongooseSchema } from "mongoose-zod";
 
 type Enumerate<
@@ -71,7 +71,7 @@ export const DiagramSchema = z
 	.mongoose({
 		schemaOptions: { timestamps: true, versionKey: false },
 		typeOptions: {
-			_id: { index: true, unique: true, auto: true },
+			_id: { auto: true },
 			_owner: { required: true, ref: "User" },
 			_collaborators: { ref: "User" },
 		},

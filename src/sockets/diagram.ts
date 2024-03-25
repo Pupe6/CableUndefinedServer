@@ -215,7 +215,7 @@ export function registerEvents(socket: SocketWithAuth) {
 				});
 			}
 
-			if (diagramToDelete[0]._owner !== user._id) {
+			if (!diagramToDelete[0]._owner.equals(user._id)) {
 				return socket.emit("error", {
 					error: Errors.UNAUTHORIZED,
 				});
