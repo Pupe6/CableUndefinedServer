@@ -1,14 +1,12 @@
-import { mongooseZodCustomType, z } from "mongoose-zod";
+import { z } from "mongoose-zod";
 import { SocketWithAuth } from "..";
 import { Errors } from "../utils/errors";
 import { deleteUser, updateUser } from "../utils/users";
+import { JWTUserSchema } from "../middleware/authenticateWS";
 
 export function registerEvents(socket: SocketWithAuth) {
 	const usersUpdateSchema = z
 		.object({
-			user: z.object({
-				_id: mongooseZodCustomType("ObjectId"),
-			}),
 			password: z.string(),
 			updatedUser: z
 				.object({
@@ -18,6 +16,7 @@ export function registerEvents(socket: SocketWithAuth) {
 				})
 				.strict(),
 		})
+		.merge(JWTUserSchema)
 		.strict();
 
 	socket.onWithAuth("users:update", async (data: unknown) => {
@@ -50,11 +49,9 @@ export function registerEvents(socket: SocketWithAuth) {
 
 	const usersDeleteSchema = z
 		.object({
-			user: z.object({
-				_id: mongooseZodCustomType("ObjectId"),
-			}),
 			password: z.string(),
 		})
+		.merge(JWTUserSchema)
 		.strict();
 
 	socket.onWithAuth("users:delete", async (data: unknown) => {

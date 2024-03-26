@@ -3,12 +3,16 @@ import { Errors } from "../utils/errors";
 import { SocketWithAuth } from "..";
 import { predict } from "../utils/langchain";
 import { z } from "mongoose-zod";
+import { JWTUserSchema } from "../middleware/authenticateWS";
 
 export function registerEvents(socket: SocketWithAuth) {
-	const predictionSchema = z.object({
-		microcontroller: z.string().min(1),
-		module: z.string().min(1),
-	});
+	const predictionSchema = z
+		.object({
+			microcontroller: z.string().min(1),
+			module: z.string().min(1),
+		})
+		.merge(JWTUserSchema)
+		.strict();
 
 	socket.onWithAuth("prediction", async (data: unknown) => {
 		try {
